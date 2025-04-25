@@ -1,0 +1,84 @@
+=======================================================
+                SINISTER-OS WIKI
+=======================================================
+
+## PROJECT OVERVIEW
+
+Sinister-OS is a minimalist operating system built from scratch as an educational
+project. It demonstrates fundamental OS concepts including boot sequences, 
+kernel operations, and basic device drivers.
+
+## SYSTEM ARCHITECTURE
+
+- Boot Sector: Implements a 2-stage bootloader
+- Kernel: 32-bit protected mode kernel
+- Drivers: Basic hardware interface implementations
+
+## FEATURES
+
+1. 32-bit protected mode operation
+2. Custom bootloader
+3. Basic keyboard driver
+4. Text-mode display driver
+5. Memory management foundations
+6. Interrupt handling
+7. System resource monitoring
+
+## BUILD INSTRUCTIONS
+
+### Linux/Unix:
+- Build full system: `make all`
+- Run in QEMU: `make run`
+- Clean build artifacts: `make clean`
+- Debug with GDB: `make debug`
+
+### Windows:
+- Build full system: `make win-os-image`
+- Run in QEMU: `make win-run`
+- Clean build artifacts: `make win-clean`
+- Debug with GDB: `make win-debug`
+
+## AVAILABLE COMMANDS
+
+The OS is currently in early development stages. Available commands include:
+
+- `help` - Display available commands
+- `cls` - Clear the screen
+- `shutdown` - Shut down the system
+- `monitor` - Display system resource usage (CPU, memory, disk)
+
+## SYSTEM MONITORING
+
+The resource monitor displays:
+- CPU usage percentage with visual graph
+- Memory usage (used/total) with visual graph
+- Disk usage (used/total) with visual graph
+- System uptime
+- Active process information
+
+## DEVELOPMENT ROADMAP
+
+- File system implementation
+- User process management
+- Shell interface
+- Additional device drivers
+- Network stack
+- Expanded resource monitoring capabilities
+
+## DEBUGGING
+
+To debug the system:
+1. Start with debug target: `make debug` or `make win-debug`
+2. In another terminal: `gdb`
+3. In GDB: `target remote localhost:1234`
+4. Set breakpoints and debug as needed
+
+## CONTRIBUTING
+
+Contributions welcome! Please follow these guidelines:
+- Use consistent code style
+- Document new features in this wiki
+- Ensure all commits have descriptive messages
+- Test thoroughly before submitting changes
+
+=======================================================
