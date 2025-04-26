@@ -43,9 +43,13 @@ kernel operations, and basic device drivers.
 The OS is currently in early development stages. Available commands include:
 
 - `help` - Display available commands
-- `cls` - Clear the screen
+- `clear` - Clear the screen
 - `shutdown` - Shut down the system
 - `monitor` - Display system resource usage (CPU, memory, disk)
+- `version` - Display system version information (neofetch-like)
+- `reboot` - Restart the system
+- `uptime` - Show system uptime
+- `echo [text]` - Display the text after the command
 
 ## SYSTEM MONITORING
 
@@ -82,3 +86,16 @@ Contributions welcome! Please follow these guidelines:
 - Test thoroughly before submitting changes
 
 =======================================================
+
+## KEYBOARD SUPPORT
+
+SinisterOS now includes full QWERTY keyboard support with:
+- Lowercase and uppercase letters (via Shift or Caps Lock)
+- Number keys (0-9)
+- Special characters and symbols
+- Modifier keys (Shift, Caps Lock)
+
+The following keyboard features are implemented:
+1. Case sensitivity with Shift and Caps Lock
+2. Number row with symbols accessible via Shift
+3. Full set of punctuation and special characters

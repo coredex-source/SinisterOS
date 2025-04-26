@@ -2,6 +2,7 @@
 #include "../kernel/io.h"
 #include "../kernel/screen.h"
 #include "../kernel/system_stats.h"
+#include "../include/sysinfo.h"
 
 #define KEYBOARD_DATA_PORT 0x60
 #define KEYBOARD_STATUS_PORT 0x64
@@ -33,6 +34,10 @@ struct IDT_entry IDT[IDT_SIZE];
 // Buffer to store command
 char command_buffer[256];
 int buffer_pos = 0;
+
+// Add state variables for shift and caps lock
+static int shift_pressed = 0;
+static int caps_lock_on = 0;
 
 void init_keyboard() {
     // Setup IDT
@@ -88,52 +93,115 @@ void init_keyboard() {
 }
 
 void keyboard_handler() {
+    // Read the keyboard status
     unsigned char status = port_byte_in(KEYBOARD_STATUS_PORT);
     
     // Only process keyboard data when the output buffer is full (bit 0 of status)
     if (status & 0x01) {
-        char keycode = port_byte_in(KEYBOARD_DATA_PORT);
+        // Read the scancode
+        unsigned char scancode = port_byte_in(KEYBOARD_DATA_PORT);
         
-        // Only process key press events (ignore key release)
-        if(!(keycode & 0x80)) {  // Check if the high bit is not set (key press)
-            if(keycode == ENTER) {
+        // Handle key release events (top bit is set when key is released)
+        if (scancode & 0x80) {
+            // Convert to the pressed key code by clearing the top bit
+            unsigned char released_key = scancode & 0x7F;
+            
+            // Handle special key releases
+            if (released_key == LEFT_SHIFT || released_key == RIGHT_SHIFT) {
+                shift_pressed = 0;
+            }
+        } 
+        // Handle key press events
+        else {
+            // Handle special keys
+            if (scancode == LEFT_SHIFT || scancode == RIGHT_SHIFT) {
+                shift_pressed = 1;
+            } 
+            else if (scancode == CAPS_LOCK) {
+                caps_lock_on = !caps_lock_on;
+            }
+            else if (scancode == ENTER) {
                 kprint("\n");
                 command_buffer[buffer_pos] = '\0';
                 
                 // Process command if not empty
-                if(buffer_pos > 0) {
+                if (buffer_pos > 0) {
                     execute_command(command_buffer);
                 }
                 
                 kprint("> ");
                 buffer_pos = 0;
-            } else if(keycode == BACKSPACE) {
-                if(buffer_pos > 0) {
+            } 
+            else if (scancode == BACKSPACE) {
+                if (buffer_pos > 0) {
                     buffer_pos--;
                     command_buffer[buffer_pos] = '\0';
                     kprint_backspace();
                 }
-            } else {
-                char letter = get_ascii_char(keycode);
-                if(letter != 0) {
+            } 
+            else {
+                // Convert scancode to ASCII character
+                char letter = get_ascii_char(scancode);
+                
+                // Only process if it's a valid character
+                if (letter != 0) {
+                    // Apply shift and caps lock modifications
+                    if (letter >= 'a' && letter <= 'z') {
+                        // For letters, apply caps lock XOR shift
+                        if (caps_lock_on ^ shift_pressed) {
+                            letter = letter - 32; // Convert to uppercase
+                        }
+                    } 
+                    else if (shift_pressed) {
+                        // For other characters, apply shift mapping
+                        switch (letter) {
+                            case '1': letter = '!'; break;
+                            case '2': letter = '@'; break;
+                            case '3': letter = '#'; break;
+                            case '4': letter = '$'; break;
+                            case '5': letter = '%'; break;
+                            case '6': letter = '^'; break;
+                            case '7': letter = '&'; break;
+                            case '8': letter = '*'; break;
+                            case '9': letter = '('; break;
+                            case '0': letter = ')'; break;
+                            case '-': letter = '_'; break;
+                            case '=': letter = '+'; break;
+                            case '[': letter = '{'; break;
+                            case ']': letter = '}'; break;
+                            case '\\': letter = '|'; break;
+                            case ';': letter = ':'; break;
+                            case '\'': letter = '\"'; break;
+                            case ',': letter = '<'; break;
+                            case '.': letter = '>'; break;
+                            case '/': letter = '?'; break;
+                            case '`': letter = '~'; break;
+                        }
+                    }
+                    
+                    // Print the character and add to command buffer
                     char str[2] = {letter, '\0'};
                     kprint(str);
-                    command_buffer[buffer_pos] = letter;
-                    buffer_pos++;
+                    
+                    // Only add to buffer if there's space
+                    if (buffer_pos < 255) {
+                        command_buffer[buffer_pos] = letter;
+                        buffer_pos++;
+                    }
                 }
             }
         }
     }
-
+    
     // Always send EOI to acknowledge the interrupt
-    port_byte_out(0x20, 0x20);  // Master PIC EOI
+    port_byte_out(0x20, 0x20);
 }
 
 /**
  * Execute command based on user input
  */
 void execute_command(char *command) {
-    if(str_equal(command, "cls")) {
+    if(str_equal(command, "clear")) {
         clear_screen();
     } else if(str_equal(command, "shutdown")) {
         shutdown();
@@ -141,6 +209,14 @@ void execute_command(char *command) {
         display_help();
     } else if(str_equal(command, "monitor")) {
         display_resource_usage();
+    } else if(str_equal(command, "version")) {
+        display_version();
+    } else if(str_equal(command, "uptime")) {
+        display_uptime();
+    } else if(str_equal(command, "reboot")) {
+        reboot();
+    } else if(str_starts_with(command, "echo ")) {
+        echo_command(command + 5); // Skip "echo " prefix
     } else {
         kprint("Unknown command: ");
         kprint(command);
@@ -162,6 +238,30 @@ int str_equal(char *s1, char *s2) {
 }
 
 /**
+ * Check if string starts with a prefix
+ * Returns 1 if it starts with, 0 if not
+ */
+int str_starts_with(char *s1, char *prefix) {
+    int i = 0;
+    while(prefix[i] != '\0') {
+        if(s1[i] != prefix[i]) return 0;
+        i++;
+    }
+    return 1;
+}
+
+/**
+ * Get the length of a string
+ */
+int str_length(char *s) {
+    int len = 0;
+    while(s[len] != '\0') {
+        len++;
+    }
+    return len;
+}
+
+/**
  * Shutdown the system
  */
 void shutdown() {
@@ -178,15 +278,161 @@ void shutdown() {
 }
 
 /**
+ * Reboot the system
+ */
+void reboot() {
+    kprint("Rebooting...\n");
+    
+    // Wait for the keyboard buffer to be cleared
+    unsigned char temp;
+    do {
+        temp = port_byte_in(0x64);
+        if((temp & 1) != 0) {
+            port_byte_in(0x60); // read and discard
+        }
+    } while((temp & 2) != 0);
+    
+    // Send reset command to the keyboard controller
+    port_byte_out(0x64, 0xFE); // Pulse reset line
+    
+    // If we get here, the above method didn't work - try alternative reset
+    kprint("First reset method failed, trying alternative...\n");
+    
+    // Use a different approach for triple fault - avoid direct memory reference
+    __asm__ volatile (
+        "movl $0, %%eax\n\t"
+        "movl %%eax, %%cr3\n\t"  // Invalid CR3 will cause a fault
+        "int $3"
+        : : : "eax"
+    );
+    
+    // If we get here, nothing worked
+    kprint("Failed to reboot. Please press the reset button.\n");
+}
+
+/**
+ * Echo back the arguments provided
+ */
+void echo_command(char *args) {
+    kprint(args);
+    kprint("\n");
+}
+
+/**
+ * Display version information in a neofetch-like style
+ */
+void display_version() {
+    system_stats_t stats = get_system_stats();
+    char buffer[32];
+    
+    kprint("\n");
+    kprint("  \\\\\\\\\\\\\\\\       \\\\\\\\\\\\\\\\    User: Guest\n");
+    kprint("  \\\\\\\\\\\\\\\\\\\\\\\\   \\\\\\\\\\\\\\\\    OS: ");
+    kprint(OS_NAME);
+    kprint(" ");
+    kprint(OS_VERSION);
+    kprint("\n");
+    
+    kprint("  \\\\\\\\ \\\\\\\\\\\\\\\\\\ \\\\\\\\       Kernel: ");
+    kprint(KERNEL_NAME);
+    kprint(" ");
+    kprint(KERNEL_VERSION);
+    kprint("\n");
+    
+    kprint("   \\\\\\\\ \\\\\\ \\\\\\ \\\\\\\\       Build: ");
+    kprint(BUILD_DATE);
+    kprint("-");
+    kprint(BUILD_ARCH);
+    kprint("\n");
+    
+    kprint("    \\\\\\\\ \\\\  \\\\\\ \\\\\\\\      Shell: ");
+    kprint(SHELL_NAME);
+    kprint(" ");
+    kprint(SHELL_VERSION);
+    kprint("\n");
+    
+    kprint("     \\\\\\\\\\\\ \\\\\\\\\\\\      Resolution: ");
+    kprint(DISPLAY_MODE);
+    kprint("\n");
+    
+    kprint("      \\\\\\\\\\\\\\\\\\\\\\\\       CPU: ");
+    kprint(stats.cpu_model);
+    kprint("\n");
+    
+    kprint("       \\\\\\\\\\\\\\\\\\\\        Memory: ");
+    int_to_ascii(stats.memory_total / 1024, buffer);
+    kprint(buffer);
+    kprint(" MB Total\n");
+    
+    kprint("\n");
+    kprint("RRRRR   EEEEE   AAA   DDDD   Y   Y\n"); 
+    kprint("R   R   E      A   A  D   D   Y Y \n");
+    kprint("RRRRR   EEEE   AAAAA  D   D    Y  \n");
+    kprint("R  R    E      A   A  D   D    Y  \n");
+    kprint("R   R   EEEEE  A   A  DDDD     Y  \n");
+    kprint("\n");
+}
+
+/**
+ * Display uptime information
+ */
+void display_uptime() {
+    system_stats_t stats = get_system_stats();
+    char buffer[32];
+    
+    kprint("\nSystem uptime: ");
+    
+    // Days
+    int days = stats.uptime_seconds / (3600 * 24);
+    if (days > 0) {
+        int_to_ascii(days, buffer);
+        kprint(buffer);
+        kprint(" day");
+        if (days != 1) kprint("s");
+        kprint(", ");
+    }
+    
+    // Hours
+    unsigned int hours = (stats.uptime_seconds % (3600 * 24)) / 3600;
+    if (hours > 0 || days > 0) {
+        int_to_ascii(hours, buffer);
+        kprint(buffer);
+        kprint(" hour");
+        if (hours != 1) kprint("s");
+        kprint(", ");
+    }
+    
+    // Minutes
+    unsigned int mins = (stats.uptime_seconds % 3600) / 60;
+    int_to_ascii(mins, buffer);
+    kprint(buffer);
+    kprint(" minute");
+    if (mins != 1) kprint("s");
+    kprint(", ");
+    
+    // Seconds
+    unsigned int secs = stats.uptime_seconds % 60;
+    int_to_ascii(secs, buffer);
+    kprint(buffer);
+    kprint(" second");
+    if (secs != 1) kprint("s");
+    kprint("\n");
+}
+
+/**
  * Display help text
  */
 void display_help() {
     kprint("Sinister OS - Basic Commands\n");
     kprint("---------------------------\n");
     kprint("help     - Display this help text\n");
-    kprint("cls      - Clear the screen\n");
+    kprint("clear      - Clear the screen\n");
     kprint("shutdown - Shut down the system\n");
+    kprint("reboot   - Restart the system\n");
     kprint("monitor  - Display system resource usage\n");
+    kprint("version  - Display system version information\n");
+    kprint("uptime   - Show system uptime\n");
+    kprint("echo     - Display text after command\n");
 }
 
 /**
@@ -221,6 +467,7 @@ void display_resource_usage() {
     // CPU Usage
     kprint("CPU Usage: ");
     kprint("[");
+
     for (int i = 0; i < 10; i++) {
         if (i < stats.cpu_usage / 10) {
             kprint("#");
@@ -262,6 +509,7 @@ void display_resource_usage() {
     // Disk Usage
     kprint("Disk Usage: ");
     kprint("[");
+
     int disk_percentage = (stats.disk_used * 100) / (stats.disk_total > 0 ? stats.disk_total : 1);
     for (int i = 0; i < 10; i++) {
         if (i < disk_percentage / 10) {
@@ -355,9 +603,10 @@ void int_to_ascii(int n, char str[]) {
     }
 }
 
-// Very basic keycode to ASCII mapping
+// Enhanced keycode to ASCII mapping for a full QWERTY keyboard
 char get_ascii_char(unsigned char key_code) {
     switch(key_code) {
+        // Numbers row
         case 0x02: return '1';
         case 0x03: return '2';
         case 0x04: return '3';
@@ -368,6 +617,10 @@ char get_ascii_char(unsigned char key_code) {
         case 0x09: return '8';
         case 0x0A: return '9';
         case 0x0B: return '0';
+        case 0x0C: return '-';
+        case 0x0D: return '=';
+        
+        // QWERTY row
         case 0x10: return 'q';
         case 0x11: return 'w';
         case 0x12: return 'e';
@@ -378,6 +631,11 @@ char get_ascii_char(unsigned char key_code) {
         case 0x17: return 'i';
         case 0x18: return 'o';
         case 0x19: return 'p';
+        case 0x1A: return '[';
+        case 0x1B: return ']';
+        case 0x2B: return '\\';
+        
+        // ASDFG row
         case 0x1E: return 'a';
         case 0x1F: return 's';
         case 0x20: return 'd';
@@ -387,6 +645,11 @@ char get_ascii_char(unsigned char key_code) {
         case 0x24: return 'j';
         case 0x25: return 'k';
         case 0x26: return 'l';
+        case 0x27: return ';';
+        case 0x28: return '\''; 
+        case 0x29: return '`';
+        
+        // ZXCVB row
         case 0x2C: return 'z';
         case 0x2D: return 'x';
         case 0x2E: return 'c';
@@ -394,7 +657,13 @@ char get_ascii_char(unsigned char key_code) {
         case 0x30: return 'b';
         case 0x31: return 'n';
         case 0x32: return 'm';
+        case 0x33: return ',';
+        case 0x34: return '.';
+        case 0x35: return '/';
+        
+        // Space bar and other common keys
         case 0x39: return ' ';
+        
         default: return 0;
     }
 }

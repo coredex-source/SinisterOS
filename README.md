@@ -2,7 +2,14 @@
 A 32-bit OS written in assembly and C.
 
 # Features
-Refer to wiki.txt
+- 32-bit protected mode operation
+- Full QWERTY keyboard support with uppercase/lowercase letters
+- Basic shell with commands: help, cls, shutdown, reboot, monitor, version, uptime, echo
+- System monitoring and resource tracking
+- CPU detection
+- Text mode display
+
+For more details, refer to wiki.txt
 
 # Future Plans
 ### As it is just a project to learn the basics of OS dev do not expect anything great.

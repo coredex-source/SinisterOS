@@ -1,5 +1,6 @@
 #include "system_stats.h"
 #include "io.h"
+#include "../include/sysinfo.h"
 
 // Global system stats structure
 static system_stats_t stats;
@@ -22,6 +23,118 @@ unsigned long long read_tsc() {
     unsigned long low, high;
     __asm__ volatile("rdtsc" : "=a" (low), "=d" (high));
     return ((unsigned long long)high << 32) | low;
+}
+
+// Check for CPUID instruction support
+int is_cpuid_supported() {
+    int supported = 0;
+    __asm__ volatile (
+        "pushfl\n\t"
+        "pop %%eax\n\t"
+        "mov %%eax, %%ecx\n\t"
+        "xor $0x200000, %%eax\n\t"
+        "push %%eax\n\t"
+        "popfl\n\t"
+        "pushfl\n\t"
+        "pop %%eax\n\t"
+        "xor %%ecx, %%eax\n\t"
+        "shr $21, %%eax\n\t"
+        "and $1, %%eax\n\t"
+        "mov %%eax, %0\n\t"
+        "push %%ecx\n\t"
+        "popfl"
+        : "=r" (supported)
+        : 
+        : "eax", "ecx", "cc"
+    );
+    return supported;
+}
+
+// Detect CPU type using CPUID if available
+int detect_cpu_type() {
+    int result = CPU_GENERIC;
+    
+    // Check if CPUID instruction is available
+    if (!is_cpuid_supported()) {
+        // No CPUID, must be 386 or 486 without CPUID
+        return CPU_386;
+    }
+    
+    // Get CPU vendor ID
+    char vendor[13] = {0};
+    unsigned int eax, ebx, ecx, edx;
+    
+    __asm__ volatile (
+        "cpuid" 
+        : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+        : "a"(0)
+    );
+    
+    // Store vendor string (12 chars)
+    ((unsigned int *)vendor)[0] = ebx;
+    ((unsigned int *)vendor)[1] = edx;
+    ((unsigned int *)vendor)[2] = ecx;
+    vendor[12] = '\0';
+    
+    // Get CPU features and family information
+    __asm__ volatile (
+        "cpuid"
+        : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+        : "a"(1)
+    );
+    
+    // Extract family and model info
+    unsigned int family = (eax >> 8) & 0xF;       // Family code
+    unsigned int extended_family = (eax >> 20) & 0xFF;  // Extended family
+    unsigned int model = (eax >> 4) & 0xF;       // Model number
+    unsigned int extended_model = (eax >> 16) & 0xF;    // Extended model
+    
+    // Determine CPU type based on family
+    if (family < 4) {
+        result = CPU_386;
+    } else if (family == 4) {
+        result = CPU_486;
+    } else if (family == 5) {
+        result = CPU_PENTIUM;
+    } else if (family >= 6) {
+        result = CPU_PENTIUM_PRO;
+    } else {
+        result = CPU_UNKNOWN;
+    }
+    
+    return result;
+}
+
+// Get CPU string based on detected CPU type
+const char* get_cpu_type_string() {
+    switch(stats.cpu_type) {
+        case CPU_386:
+            return "Intel 386";
+        case CPU_486:
+            return "Intel 486";
+        case CPU_PENTIUM:
+            return "Intel Pentium";
+        case CPU_PENTIUM_PRO:
+            return "Intel Pentium Pro or newer";
+        case CPU_GENERIC:
+            return "Generic x86";
+        default:
+            return "Unknown CPU";
+    }
+}
+
+// Detect and store CPU information
+void detect_cpu_info(char* buffer, int max_len) {
+    // Use the existing CPU type detection
+    const char* cpu_type = get_cpu_type_string();
+    
+    // Copy to the buffer with bounds checking
+    int i = 0;
+    while (cpu_type[i] != '\0' && i < max_len - 1) {
+        buffer[i] = cpu_type[i];
+        i++;
+    }
+    buffer[i] = '\0';
 }
 
 // Initialize system statistics
@@ -47,6 +160,10 @@ void init_system_stats() {
     stats.uptime_seconds = 0;
     stats.ticks_per_second = 0;
     stats.tick_counter = 0;
+    
+    // Detect CPU information
+    stats.cpu_type = detect_cpu_type();
+    detect_cpu_info(stats.cpu_model, sizeof(stats.cpu_model));
 }
 
 // Completely avoid 64-bit division by using a simpler approach

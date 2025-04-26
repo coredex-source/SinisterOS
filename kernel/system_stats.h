@@ -17,6 +17,10 @@ typedef struct {
     // Fields for timing calculations
     unsigned int ticks_per_second;
     unsigned int tick_counter;
+    
+    // CPU information - adding these fields to fix the errors
+    int cpu_type;
+    char cpu_model[64];
 } system_stats_t;
 
 // Initialize system statistics
@@ -30,5 +34,10 @@ void record_idle_time();
 
 // Get current system statistics
 system_stats_t get_system_stats();
+
+// CPU detection functions
+int detect_cpu_type();
+const char* get_cpu_type_string();
+void detect_cpu_info(char* buffer, int max_len);
 
 #endif /* SYSTEM_STATS_H */

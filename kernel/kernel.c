@@ -20,7 +20,7 @@ void main() {
     kprint("  ___) | | | | | \\__ \\ ||  __/ |   | |_| |___) |\n");
     kprint(" |____/|_|_| |_|_|___/\\__\\___|_|    \\___/|____/ \n");
     kprint("\n");
-    kprint("Welcome to Sinister OS 0.1\n");
+    kprint("Welcome to Sinister OS\n");
     kprint("Type 'help' to view available commands\n");
     
     // Initialize keyboard
