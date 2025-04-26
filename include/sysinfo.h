@@ -3,7 +3,7 @@
 
 // System version information
 #define OS_NAME          "SinisterOS"
-#define OS_VERSION       "0.3.0"
+#define OS_VERSION       "0.3.1"
 #define KERNEL_NAME      "SinisterKernel"
 #define KERNEL_VERSION   "0.0.2"
 #define BUILD_DATE       "260425"

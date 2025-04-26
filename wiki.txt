@@ -55,6 +55,10 @@ The OS is currently in early development stages. Available commands include:
 - `pwd` - Print current working directory
 - `cat [file]` - Display contents of a file
 - `touch [file]` - Create a new file or update timestamp
+- `rm [option] [file/dir]` - Delete files or directories
+- `mkdir [dirname]` - Create a new directory
+- `cp [src] [dest]` - Copy a file to a new location
+- `mv [src] [dest]` - Move or rename a file or directory
 
 ## FILESYSTEM
 
@@ -63,7 +67,8 @@ SinisterOS includes a basic FAT-like filesystem with support for:
 - File and directory listings
 - Directory navigation
 - File metadata (name, size, attributes)
-- File operations (view, create)
+- File operations (view, create, delete, copy, move)
+- Directory operations (create, delete, navigate)
 
 Currently supported file operations:
 - List directory contents (`ls`)
@@ -71,11 +76,22 @@ Currently supported file operations:
 - View current directory path (`pwd`)
 - Display file contents (`cat`)
 - Create or update files (`touch`)
+- Delete files or directories (`rm`)
+- Create directories (`mkdir`)
+- Copy files (`cp`)
+- Move files and directories (`mv`)
 
 Special paths:
 - `/` - Root directory
 - `.` - Current directory
 - `..` - Parent directory
+
+RM Command Options:
+- `-dir [dirname]` - Delete an empty directory
+- `-f-dir [dirname]` - Force delete a directory and its contents
+- `-f [filename]` - Delete a file (default)
+- `-*f` - Delete all files in current directory
+- `-*f-ext [ext]` - Delete all files with specific extension
 
 ## SYSTEM MONITORING
 

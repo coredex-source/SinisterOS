@@ -201,7 +201,7 @@ void keyboard_handler() {
 /**
  * Get string length
  */
-int str_length(char *s) {
+int str_length(const char *s) {
     int len = 0;
     while(s[len] != '\0') {
         len++;
@@ -278,6 +278,14 @@ void execute_command(char *command) {
         cat_command(command + 4); // Skip "cat " prefix
     } else if(str_starts_with(command, "touch ")) {
         touch_command(command + 6); // Skip "touch " prefix
+    } else if(str_starts_with(command, "rm ")) {
+        rm_command(command + 3); // Skip "rm " prefix
+    } else if(str_starts_with(command, "mkdir ")) {
+        mkdir_command(command + 6); // Skip "mkdir " prefix
+    } else if(str_starts_with(command, "cp ")) {
+        cp_command(command + 3); // Skip "cp " prefix
+    } else if(str_starts_with(command, "mv ")) {
+        mv_command(command + 3); // Skip "mv " prefix
     } else {
         kprint("Unknown command: ");
         kprint(command);
@@ -327,6 +335,122 @@ void touch_command(char *filename) {
 }
 
 /**
+ * Delete files or directories
+ */
+void rm_command(char *args) {
+    // Check for empty args
+    if (args[0] == '\0') {
+        kprint("Usage: rm [option] [filename]\n");
+        kprint("Options:\n");
+        kprint("  -dir     - Delete an empty directory\n");
+        kprint("  -f-dir   - Force delete a directory and its contents\n");
+        kprint("  -f       - Delete a file (default)\n");
+        kprint("  -*f      - Delete all files in current directory\n");
+        kprint("  -*f-ext [ext] - Delete all files with specific extension\n");
+        return;
+    }
+    
+    // Parse options and filename
+    if (str_starts_with(args, "-dir ")) {
+        // Delete an empty directory
+        fs_delete_directory(args + 5, 0);
+    } else if (str_starts_with(args, "-f-dir ")) {
+        // Force delete a directory and its contents
+        fs_delete_directory(args + 7, 1);
+    } else if (str_starts_with(args, "-*f-ext ")) {
+        // Delete all files with specific extension
+        fs_delete_files_by_extension(args + 8);
+    } else if (str_equal(args, "-*f")) {
+        // Delete all files in current directory
+        fs_delete_all_files();
+    } else if (str_starts_with(args, "-f ")) {
+        // Delete a file (explicit option)
+        fs_delete_file(args + 3);
+    } else {
+        // Default: delete a file
+        fs_delete_file(args);
+    }
+}
+
+/**
+ * Create a new directory
+ */
+void mkdir_command(char *dirname) {
+    if (dirname[0] == '\0') {
+        kprint("Usage: mkdir <directory_name>\n");
+        return;
+    }
+    
+    fs_create_directory(dirname);
+}
+
+/**
+ * Copy a file from source to destination
+ */
+void cp_command(char *args) {
+    // Parse arguments - find space between paths
+    char *space_pos = args;
+    while(*space_pos != ' ' && *space_pos != '\0') {
+        space_pos++;
+    }
+    
+    if (*space_pos == '\0') {
+        kprint("Usage: cp <source_file> <destination_file>\n");
+        return;
+    }
+    
+    // Split into two paths
+    *space_pos = '\0';
+    char *src_path = args;
+    char *dest_path = space_pos + 1;
+    
+    // Skip leading spaces in destination path
+    while (*dest_path == ' ') {
+        dest_path++;
+    }
+    
+    if (*dest_path == '\0') {
+        kprint("Usage: cp <source_file> <destination_file>\n");
+        return;
+    }
+    
+    fs_copy_file(src_path, dest_path);
+}
+
+/**
+ * Move a file or directory
+ */
+void mv_command(char *args) {
+    // Parse arguments - find space between paths
+    char *space_pos = args;
+    while(*space_pos != ' ' && *space_pos != '\0') {
+        space_pos++;
+    }
+    
+    if (*space_pos == '\0') {
+        kprint("Usage: mv <source> <destination>\n");
+        return;
+    }
+    
+    // Split into two paths
+    *space_pos = '\0';
+    char *src_path = args;
+    char *dest_path = space_pos + 1;
+    
+    // Skip leading spaces in destination path
+    while (*dest_path == ' ') {
+        dest_path++;
+    }
+    
+    if (*dest_path == '\0') {
+        kprint("Usage: mv <source> <destination>\n");
+        return;
+    }
+    
+    fs_move(src_path, dest_path);
+}
+
+/**
  * Display help text
  */
 void display_help() {
@@ -345,6 +469,10 @@ void display_help() {
     kprint("pwd      - Print working directory\n");
     kprint("cat      - Display file contents\n");
     kprint("touch    - Create a new file or update timestamp\n");
+    kprint("rm       - Delete files or directories\n");
+    kprint("mkdir    - Create a new directory\n");
+    kprint("cp       - Copy a file\n");
+    kprint("mv       - Move or rename a file or directory\n");
 }
 
 /**

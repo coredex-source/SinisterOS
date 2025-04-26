@@ -23,8 +23,12 @@ void cd_command(char *path);
 void pwd_command();
 void cat_command(char *filename);
 void touch_command(char *filename);
+void rm_command(char *args);
+void mkdir_command(char *dirname);
+void cp_command(char *args);
+void mv_command(char *args);
 void int_to_ascii(int n, char str[]);
-int str_length(char *s);
+int str_length(const char *s);
 char* str_copy(char* dest, const char* src);
 
 #endif

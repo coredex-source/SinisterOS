@@ -80,6 +80,27 @@ int fs_cat_file(const char* filename);
 // Create or update a file
 int fs_touch_file(const char* filename);
 
+// Delete a file
+int fs_delete_file(const char* filename);
+
+// Delete a directory
+int fs_delete_directory(const char* dirname, int force);
+
+// Delete all files in current directory
+int fs_delete_all_files();
+
+// Delete all files of a specific extension
+int fs_delete_files_by_extension(const char* extension);
+
+// Create a directory
+int fs_create_directory(const char* dirname);
+
+// Copy a file
+int fs_copy_file(const char* src_path, const char* dest_path);
+
+// Move a file or directory
+int fs_move(const char* src_path, const char* dest_path);
+
 // Create a simple in-memory filesystem for testing
 void fs_create_test_fs();
 
@@ -88,5 +109,14 @@ void format_filename(char* dest, const char* src);
 
 // Parse 8.3 filename format
 void parse_filename(const char* input, char* output);
+
+// Helper function to check if a string ends with a specific extension
+int has_extension(const char* filename, const char* extension);
+
+// Helper functions for path manipulation
+char* get_parent_path(const char* path, char* buffer);
+char* get_filename(const char* path, char* buffer);
+int path_exists(const char* path);
+int is_directory(const char* path);
 
 #endif /* FILESYSTEM_H */
