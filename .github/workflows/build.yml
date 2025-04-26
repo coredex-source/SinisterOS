@@ -29,4 +29,3 @@ jobs:
         name: sinister-os-image
         path: os-image
         if-no-files-found: error
-```
