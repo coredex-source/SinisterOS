@@ -2,9 +2,9 @@ name: SinisterOS Build
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main32 ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main32 ]
 
 jobs:
   build:
