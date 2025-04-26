@@ -1,0 +1,32 @@
+name: SinisterOS Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential nasm gcc binutils gcc-multilib gdb qemu-system-x86
+        
+    - name: Build SinisterOS
+      run: |
+        make clean
+        make all
+        
+    - name: Upload OS image
+      uses: actions/upload-artifact@v3
+      with:
+        name: sinister-os-image
+        path: os-image
+        if-no-files-found: error
+```
