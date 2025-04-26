@@ -50,6 +50,32 @@ The OS is currently in early development stages. Available commands include:
 - `reboot` - Restart the system
 - `uptime` - Show system uptime
 - `echo [text]` - Display the text after the command
+- `ls` - List contents of the current directory
+- `cd [path]` - Change current directory
+- `pwd` - Print current working directory
+- `cat [file]` - Display contents of a file
+- `touch [file]` - Create a new file or update timestamp
+
+## FILESYSTEM
+
+SinisterOS includes a basic FAT-like filesystem with support for:
+- Directory structure with paths
+- File and directory listings
+- Directory navigation
+- File metadata (name, size, attributes)
+- File operations (view, create)
+
+Currently supported file operations:
+- List directory contents (`ls`)
+- Change directory (`cd`)
+- View current directory path (`pwd`)
+- Display file contents (`cat`)
+- Create or update files (`touch`)
+
+Special paths:
+- `/` - Root directory
+- `.` - Current directory
+- `..` - Parent directory
 
 ## SYSTEM MONITORING
 

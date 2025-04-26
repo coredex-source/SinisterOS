@@ -3,6 +3,7 @@
 #include "../kernel/screen.h"
 #include "../kernel/system_stats.h"
 #include "../include/sysinfo.h"
+#include "../fs/filesystem.h"
 
 #define KEYBOARD_DATA_PORT 0x60
 #define KEYBOARD_STATUS_PORT 0x64
@@ -198,30 +199,27 @@ void keyboard_handler() {
 }
 
 /**
- * Execute command based on user input
+ * Get string length
  */
-void execute_command(char *command) {
-    if(str_equal(command, "clear")) {
-        clear_screen();
-    } else if(str_equal(command, "shutdown")) {
-        shutdown();
-    } else if(str_equal(command, "help")) {
-        display_help();
-    } else if(str_equal(command, "monitor")) {
-        display_resource_usage();
-    } else if(str_equal(command, "version")) {
-        display_version();
-    } else if(str_equal(command, "uptime")) {
-        display_uptime();
-    } else if(str_equal(command, "reboot")) {
-        reboot();
-    } else if(str_starts_with(command, "echo ")) {
-        echo_command(command + 5); // Skip "echo " prefix
-    } else {
-        kprint("Unknown command: ");
-        kprint(command);
-        kprint("\n");
+int str_length(char *s) {
+    int len = 0;
+    while(s[len] != '\0') {
+        len++;
     }
+    return len;
+}
+
+/**
+ * Copy string and return pointer to destination
+ */
+char* str_copy(char* dest, const char* src) {
+    int i = 0;
+    while(src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0';
+    return dest;
 }
 
 /**
@@ -251,14 +249,102 @@ int str_starts_with(char *s1, char *prefix) {
 }
 
 /**
- * Get the length of a string
+ * Execute command based on user input
  */
-int str_length(char *s) {
-    int len = 0;
-    while(s[len] != '\0') {
-        len++;
+void execute_command(char *command) {
+    if(str_equal(command, "cls") || str_equal(command, "clear")) {
+        clear_screen();
+    } else if(str_equal(command, "shutdown")) {
+        shutdown();
+    } else if(str_equal(command, "help")) {
+        display_help();
+    } else if(str_equal(command, "monitor")) {
+        display_resource_usage();
+    } else if(str_equal(command, "version")) {
+        display_version();
+    } else if(str_equal(command, "uptime")) {
+        display_uptime();
+    } else if(str_equal(command, "reboot")) {
+        reboot();
+    } else if(str_starts_with(command, "echo ")) {
+        echo_command(command + 5); // Skip "echo " prefix
+    } else if(str_equal(command, "ls")) {
+        ls_command();
+    } else if(str_starts_with(command, "cd ")) {
+        cd_command(command + 3); // Skip "cd " prefix
+    } else if(str_equal(command, "pwd")) {
+        pwd_command();
+    } else if(str_starts_with(command, "cat ")) {
+        cat_command(command + 4); // Skip "cat " prefix
+    } else if(str_starts_with(command, "touch ")) {
+        touch_command(command + 6); // Skip "touch " prefix
+    } else {
+        kprint("Unknown command: ");
+        kprint(command);
+        kprint("\n");
     }
-    return len;
+}
+
+/**
+ * List directory contents
+ */
+void ls_command() {
+    fs_list_directory();
+}
+
+/**
+ * Change directory
+ */
+void cd_command(char *path) {
+    if (fs_change_directory(path) == 0) {
+        // Success, show current path
+        pwd_command();
+    }
+}
+
+/**
+ * Print working directory
+ */
+void pwd_command() {
+    char* current_path = fs_get_current_path();
+    kprint("Current directory: ");
+    kprint(current_path);
+    kprint("\n");
+}
+
+/**
+ * Display file content
+ */
+void cat_command(char *filename) {
+    fs_cat_file(filename);
+}
+
+/**
+ * Create or update a file
+ */
+void touch_command(char *filename) {
+    fs_touch_file(filename);
+}
+
+/**
+ * Display help text
+ */
+void display_help() {
+    kprint("Sinister OS - Basic Commands\n");
+    kprint("---------------------------\n");
+    kprint("help     - Display this help text\n");
+    kprint("cls      - Clear the screen\n");
+    kprint("shutdown - Shut down the system\n");
+    kprint("reboot   - Restart the system\n");
+    kprint("monitor  - Display system resource usage\n");
+    kprint("version  - Display system version information\n");
+    kprint("uptime   - Show system uptime\n");
+    kprint("echo     - Display text after command\n");
+    kprint("ls       - List directory contents\n");
+    kprint("cd       - Change directory\n");
+    kprint("pwd      - Print working directory\n");
+    kprint("cat      - Display file contents\n");
+    kprint("touch    - Create a new file or update timestamp\n");
 }
 
 /**
@@ -417,22 +503,6 @@ void display_uptime() {
     kprint(" second");
     if (secs != 1) kprint("s");
     kprint("\n");
-}
-
-/**
- * Display help text
- */
-void display_help() {
-    kprint("Sinister OS - Basic Commands\n");
-    kprint("---------------------------\n");
-    kprint("help     - Display this help text\n");
-    kprint("clear      - Clear the screen\n");
-    kprint("shutdown - Shut down the system\n");
-    kprint("reboot   - Restart the system\n");
-    kprint("monitor  - Display system resource usage\n");
-    kprint("version  - Display system version information\n");
-    kprint("uptime   - Show system uptime\n");
-    kprint("echo     - Display text after command\n");
 }
 
 /**

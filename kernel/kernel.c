@@ -2,6 +2,7 @@
 #include "screen.h"
 #include "system_stats.h"
 #include "../drivers/keyboard.h"
+#include "../fs/filesystem.h"
 
 /* 
  * Main function - entry point for our kernel
@@ -22,6 +23,9 @@ void main() {
     kprint("\n");
     kprint("Welcome to Sinister OS\n");
     kprint("Type 'help' to view available commands\n");
+    
+    // Initialize filesystem
+    fs_init();
     
     // Initialize keyboard
     init_keyboard();

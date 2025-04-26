@@ -18,7 +18,13 @@ void display_resource_usage();
 void display_version();
 void display_uptime();
 void echo_command(char *args);
+void ls_command();
+void cd_command(char *path);
+void pwd_command();
+void cat_command(char *filename);
+void touch_command(char *filename);
 void int_to_ascii(int n, char str[]);
 int str_length(char *s);
+char* str_copy(char* dest, const char* src);
 
 #endif

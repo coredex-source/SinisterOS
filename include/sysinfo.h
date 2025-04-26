@@ -3,7 +3,7 @@
 
 // System version information
 #define OS_NAME          "SinisterOS"
-#define OS_VERSION       "0.2.1"
+#define OS_VERSION       "0.3.0"
 #define KERNEL_NAME      "SinisterKernel"
 #define KERNEL_VERSION   "0.0.2"
 #define BUILD_DATE       "260425"
@@ -17,7 +17,7 @@
 #define HAS_GRAPHICS     0
 #define HAS_SOUND        0
 #define HAS_USB          0
-#define HAS_FILESYSTEM   0
+#define HAS_FILESYSTEM   1  // Updated now that we've added filesystem support
 
 // CPU types - determined at runtime
 #define CPU_GENERIC      0

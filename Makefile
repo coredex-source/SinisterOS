@@ -1,8 +1,8 @@
 # Makefile for Sinister-OS
 
 # Compiler/Assembler settings
-C_SOURCES = $(wildcard kernel/*.c drivers/*.c)
-HEADERS = $(wildcard kernel/*.h drivers/*.h)
+C_SOURCES = $(wildcard kernel/*.c drivers/*.c fs/*.c)
+HEADERS = $(wildcard kernel/*.h drivers/*.h fs/*.h include/*.h)
 OBJ = ${C_SOURCES:.c=.o}
 
 # Flags for compiling 32-bit code
@@ -61,7 +61,7 @@ boot/boot.bin: boot/boot.asm
 # Clean up temporary files - more thorough cleaning
 clean:
 	rm -rf *.bin *.o os-image
-	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o
+	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o fs/*.o
 	find . -name "*.o" -type f -delete
 	find . -name "*.bin" -type f -delete
 
@@ -80,6 +80,7 @@ win-clean:
 	if exist kernel\*.o del /F /Q kernel\*.o
 	if exist boot\*.bin del /F /Q boot\*.bin
 	if exist drivers\*.o del /F /Q drivers\*.o
+	if exist fs\*.o del /F /Q fs\*.o
 	for /R %%f in (*.o *.bin) do del /F /Q "%%f"
 
 # Windows check docs
